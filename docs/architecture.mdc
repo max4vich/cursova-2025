@@ -1,0 +1,107 @@
+# E-commerce Platform Architecture
+
+## 1. Domain Context & Requirements
+
+### 1.1 Stakeholders and Roles
+- **Shopper** – переглядає каталог, управляє кошиком, оформлює замовлення, відстежує статуси.
+- **Registered Customer** – має профіль, історію замовлень, промокоди.
+- **Administrator/Manager** – завантажує товари, контролює ціни, запаси, модерує знижки й промокоди, підтверджує замовлення та платежі.
+- **Payment Service** – зовнішні постачальники (Stripe/LiqPay) для процесингу карток.
+- **Delivery Partner** – API служб доставки (Nova Poshta, DHL) для калькуляції тарифів і трекінгу.
+
+### 1.2 Functional Scope
+- Каталог товарів із категоріями, фото, ціною, залишками.
+- Пошук і фільтри, рекомендації, список бажань (vNext).
+- Реєстрація/автентифікація клієнтів, керування профілем і адресами.
+- Формування кошика, застосування промокодів і комбінації знижок.
+- Модуль оформлення замовлення з вибором доставки, онлайн-оплати, відстеження статусів.
+- Адмін-панель для CRUD операцій над товарами, клієнтами, замовленнями, промокодами, звітності.
+- Аналітичні звіти: продажі за категоріями, дохід за період, найпопулярніші товари.
+
+### 1.3 Non-functional & Architectural Constraints
+- Стек: `React.js` (SPA) + `Node.js/Express` REST API + `MySQL`/`PostgreSQL`.
+- Аутентифікація через JWT; ролі клієнта та адміністратора.
+- Модульна структура з дотриманням SOLID та GRASP, покриття ключовими GoF патернами.
+- Зовнішні інтеграції ізольовані через адаптери; конфігурація зберігається централізовано.
+- Логування та аудит критичних дій (зміни товарів, промокодів, статусів).
+
+## 2. Use Case Summary
+
+| Use Case | Actor(s) | Короткий опис |
+| --- | --- | --- |
+| UC1: Browse Catalog | Shopper | Перегляд, пошук, фільтрація товарів, перегляд деталей та наявності. |
+| UC2: Manage Cart | Shopper | Додавання/видалення позицій, оновлення кількості, підрахунок сум. |
+| UC3: Apply Promotions | Customer | Введення промокоду, поєднання з персональними знижками, перегляд підсумку. |
+| UC4: Checkout & Payment | Customer, Payment Service | Заповнення даних доставки, вибір способу оплати, проведення транзакції. |
+| UC5: Track Order | Customer, Delivery Partner | Перегляд історії й поточних статусів замовлення, отримання сповіщень. |
+| UC6: Manage Catalog | Administrator | CRUD операції над товарами, категоріями, запасами, фото. |
+| UC7: Manage Customers | Administrator | Перегляд профілів, блокування, призначення знижок. |
+| UC8: Manage Orders | Administrator | Зміна статусів (Pending → Paid → Packed → Shipped → Completed/Cancelled), призначення треків. |
+| UC9: Promotions & Pricing | Administrator | Створення промокодів, правил знижок, запуск акцій. |
+| UC10: Reporting | Administrator | Запуск звітів (продажі за категоріями, доходи за період, топ-товари) з експортом у CSV/PDF. |
+
+Текстовий опис Use Case діаграми: актори Shopper/Customer взаємодіють із «Public Storefront» (UC1–UC5), Administrator – з «Admin Console» (UC6–UC10), Payment Service та Delivery Partner підключені як зовнішні системи до UC4 і UC5/UC8 відповідно.
+
+## 3. Architecture & Technology Stack
+
+### 3.1 Client Layer (React SPA)
+- Маршрути: публічні сторінки (`/`, `/product/:id`), аутентифікація (`/login`, `/register`), профіль і історія (`/profile`, `/orders/:id`), кошик (`/cart`), чекаут (`/checkout`), адмін-панель (`/admin/**`) з guard’ами.
+- Стан: `Context API`/`Redux Toolkit` (CartContext, AuthContext). Клієнтські сервіси (`api/productService`, `api/orderService`) інкапсулюють REST виклики.
+
+### 3.2 Backend Layer (Node.js + Express)
+- Модулі: `catalog`, `customer`, `order`, `promotion`, `payment`, `reporting`, `admin`.
+- Сервер реалізує REST API (`/api/products`, `/api/orders`, `/api/reports`), використовує middleware для авторизації ролей, валідації, логування.
+- Сервіси розділені на доменні та інтеграційні (платіжні/логістичні адаптери). Контролери тонкі, бізнес-логіка у сервісах/домена.
+
+### 3.3 Data Layer (MySQL/PostgreSQL)
+- Основні таблиці: `products`, `categories`, `inventory_items`, `customers`, `addresses`, `orders`, `order_items`, `payments`, `shipments`, `promotions`, `discount_rules`, `audit_logs`.
+- Використання ORM (Prisma/TypeORM/Sequelize) для портативності між MySQL/PostgreSQL.
+
+### 3.4 Infrastructure
+- Файлове сховище для фото (S3-compatible) через Facade.
+- Message broker (RabbitMQ/Redis Streams) для webhooks і асинхронних нотифікацій (Observer).
+- CI/CD з деплоєм на Vercel/Render/Heroku; GitHub як основний репозиторій.
+
+## 4. GoF Patterns Catalogue
+
+| Pattern | Мотивація в системі | Учасники |
+| --- | --- | --- |
+| **Abstract Factory** | Створення інтеграцій для платіжних і логістичних провайдерів з уніфікованим інтерфейсом. | `IntegrationFactory` → `PaymentGateway`, `ShippingProvider`. |
+| **Factory Method** | Породження конкретних типів промокодів/знижок (відсоткова, фіксована, подарункова карта). | `PromotionFactory`, продукти `PercentDiscount`, `FixedDiscount`. |
+| **Builder** | Конструювання замовлення з кошика: кроки обробки позицій, розрахунок податків, доставки, підсумку. | `OrderBuilder`, `OrderDirector`, `Order`. |
+| **Singleton** | Централізована конфігурація (ключі API, параметри БД), кешована й потокобезпечна. | `ConfigRegistry`. |
+| **Facade** | API `CheckoutFacade` об’єднує сервіси кошика, промо, оплати, доставки в одну точку виклику для UI. | `CheckoutFacade` → `CartService`, `PromotionService`, `PaymentService`, `ShippingService`. |
+| **Adapter** | Інтеграція сторонніх платіжних/доставочних SDK до уніфікованого інтерфейсу. | `StripeAdapter`, `LiqPayAdapter`, `NovaPoshtaAdapter`. |
+| **Proxy** | Контроль доступу до інвентарю й кешування каталогу; `InventoryProxy` перевіряє доступність без навантаження БД. | `InventoryService`, `InventoryProxy`. |
+| **Decorator** | Послідовне застосування знижок (базова ціна → сезонна → промокод → персональна). | `PriceCalculator`, `SeasonalDiscountDecorator` тощо. |
+| **Composite** | Ієрархія категорій товарів (категорія може містити підкатегорії/товари). | `CategoryComponent`, `CategoryLeaf`, `CategoryGroup`. |
+| **Strategy** | Вибір алгоритму обчислення вартості доставки, оплати, податків. | `ShippingCostStrategy`, `ExpressStrategy`, `EconomyStrategy`. |
+| **Observer** | Повідомлення клієнтів про статус замовлень, вебхуки в сторонні сервіси. | `OrderSubject`, `EmailNotifier`, `WebhookNotifier`. |
+| **Command** | Адмін-операції (створення/оновлення товару, масові імпорти) з можливістю логування та відкату. | `ProductCommand`, `UpdatePriceCommand`, `CommandBus`. |
+| **Template Method** | Формування звітів: загальні кроки (отримати дані, агрегувати, форматувати) з різними реалізаціями. | `ReportTemplate`, `SalesByCategoryReport`, `RevenueReport`. |
+| **Chain of Responsibility** | Перевірка валідності промокоду: статус, термін дії, ліміти, сумісність з іншими акціями. | `PromoValidationHandler` ланцюжок. |
+| **State** | Життєвий цикл замовлення (Pending, Paid, Shipped, Delivered, Cancelled) з поведінковими обмеженнями. | `OrderContext`, конкретні стани. |
+
+Патерни комбінуються: `CheckoutFacade` делегує `OrderBuilder` та `Strategy/Decorator` для ціноутворення, `Observer` тригериться у `OrderState`. Команди адміністрування використовують `Proxy`/`Facade` для безпечного доступу до доменних сервісів.
+
+## 5. UML Class Overview (Textual)
+
+- **Product**: атрибути (id, name, description, price, sku, media[], status). Зв’язок багато-до-одного з `Category`. Методи: `applyDiscount()`, `reserveStock()`.
+- **CategoryComponent (abstract)**: `name`, `description`; операції `add()`, `remove()`, `getChildren()` – учасник Composite.
+- **InventoryItem**: `productId`, `warehouseId`, `quantity`, `reserved`; використовується `InventoryProxy` для контролю.
+- **Customer**: `profile`, `contactInfo`, `addresses[]`, `loyaltyTier`. Має `Cart` та множину `Order`.
+- **Cart**: `items: CartLine[]`, методи `addProduct()`, `updateQty()`, `applyPromotion(promo: PromotionStrategy)`.
+- **Order**: `orderNumber`, `orderItems`, `totals`, `state: OrderState`, `payment`, `shipment`. Стани реалізують патерн State, сповіщення – Observer.
+- **Promotion (abstract)**: метод `calculateDiscount(cart)`. Конкретні класи створюються через Factory Method.
+- **OrderBuilder/Director**: кроки `withCustomer`, `withItems`, `withShipping`, `withPayments`, `build()`.
+- **Payment**: `amount`, `provider`, `status`, пов’язаний із `PaymentStrategy` та адаптерами провайдерів.
+- **Shipment**: `provider`, `trackingNumber`, `estimatedDelivery`, використовує `ShippingCostStrategy`.
+- **AdminUser**: роль, дозволи; взаємодіє з `Command` об’єктами для змін каталогу.
+- **ReportTemplate** та конкретні репорти – Template Method з `generate(dataRange)`.
+- **IntegrationFactory**: створює набори адаптерів `PaymentGateway`, `ShippingProvider` на основі конфігурації (Singleton).
+
+Сутності зберігаються в БД та відображаються ORM-моделями. Контролери взаємодіють із фасадами/сервісами, які інкапсулюють патерни, забезпечуючи слабкий зв’язок між фронтендом і бізнес-логікою.
+
+---
+Документ слугуватиме базою для подальшого створення графічних діаграм (Use Case, Class, Sequence) у вибраному CASE-засобі.
+

@@ -1,17 +1,43 @@
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { mockOrders } from "../data/mockData";
+import { request } from "../api/client";
 
 const Profile = () => {
   const { user, isAuthenticated } = useAuth();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let isMounted = true;
+    const loadOrders = async () => {
+      try {
+        setLoading(true);
+        const data = await request("/orders");
+        if (isMounted) {
+          setOrders(data || []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err.message || "Не вдалося завантажити замовлення");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    loadOrders();
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-
-  const orders = mockOrders.filter(
-    (order) => order.customerEmail === user.email
-  );
 
   return (
     <div className="page profile-page">
@@ -41,7 +67,11 @@ const Profile = () => {
 
       <section className="card">
         <h3>Замовлення</h3>
-        {orders.length === 0 ? (
+        {loading ? (
+          <p className="muted">Завантаження…</p>
+        ) : error ? (
+          <p className="muted">{error}</p>
+        ) : orders.length === 0 ? (
           <p className="muted">Замовлень ще немає</p>
         ) : (
           <table>
@@ -56,11 +86,11 @@ const Profile = () => {
             <tbody>
               {orders.map((order) => (
                 <tr key={order.id}>
-                  <td>{order.id}</td>
-                  <td>{order.createdAt}</td>
-                  <td>{order.total.toLocaleString("uk-UA")} ₴</td>
+                  <td>{order.orderNumber || order.id}</td>
+                  <td>{new Date(order.placedAt).toLocaleDateString()}</td>
+                  <td>{Number(order.total).toLocaleString("uk-UA")} ₴</td>
                   <td>
-                    <span className={`status status--${order.status}`}>
+                    <span className={`status status--${order.status?.toLowerCase()}`}>
                       {order.status}
                     </span>
                   </td>

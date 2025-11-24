@@ -1,0 +1,200 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum PromotionType {
+  PERCENTAGE
+  FIXED
+  SHIPPING
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum ShipmentStatus {
+  PENDING
+  PREPARING
+  SHIPPED
+  DELIVERED
+  RETURNED
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  name      String
+  phone     String?
+  role      UserRole  @default(CUSTOMER)
+  addresses Address[]
+  cart      Cart?
+  orders    Order[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Address {
+  id         Int     @id @default(autoincrement())
+  userId     Int
+  label      String?
+  city       String
+  street     String
+  postalCode String
+  metadata   Json?
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id          Int        @id @default(autoincrement())
+  name        String
+  slug        String     @unique
+  description String?
+  parentId    Int?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Product {
+  id            Int        @id @default(autoincrement())
+  name          String
+  slug          String?    @unique
+  description   String
+  price         Decimal    @db.Decimal(10, 2)
+  compareAt     Decimal?   @db.Decimal(10, 2)
+  imageUrl      String?
+  stock         Int        @default(0)
+  sku           String     @unique
+  isActive      Boolean    @default(true)
+  rating        Float?     @default(0)
+  categoryId    Int
+  category      Category   @relation(fields: [categoryId], references: [id])
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Promotion {
+  id            Int           @id @default(autoincrement())
+  code          String        @unique
+  slug          String?       @unique
+  description   String?
+  type          PromotionType
+  value         Decimal       @db.Decimal(10, 2)
+  minSubtotal   Decimal?      @db.Decimal(10, 2)
+  maxUses       Int?
+  usedCount     Int           @default(0)
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean       @default(true)
+  carts         Cart[]
+  orders        Order[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Cart {
+  id           Int        @id @default(autoincrement())
+  userId       Int        @unique
+  promotionId  Int?
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promotion    Promotion? @relation(fields: [promotionId], references: [id])
+  items        CartItem[]
+  updatedAt    DateTime   @updatedAt
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  productId Int
+  quantity  Int      @default(1)
+  price     Decimal  @db.Decimal(10, 2)
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id           Int         @id @default(autoincrement())
+  orderNumber  String      @unique
+  userId       Int?
+  promotionId  Int?
+  status       OrderStatus @default(PENDING)
+  subtotal     Decimal     @db.Decimal(10, 2)
+  discount     Decimal     @db.Decimal(10, 2) @default(0)
+  shipping     Decimal     @db.Decimal(10, 2) @default(0)
+  tax          Decimal     @db.Decimal(10, 2) @default(0)
+  total        Decimal     @db.Decimal(10, 2)
+  notes        String?
+  placedAt     DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         User?       @relation(fields: [userId], references: [id])
+  promotion    Promotion?  @relation(fields: [promotionId], references: [id])
+  items        OrderItem[]
+  payment      Payment?
+  shipment     Shipment?
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int     @default(1)
+  price     Decimal @db.Decimal(10, 2)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id            Int           @id @default(autoincrement())
+  orderId       Int           @unique
+  provider      String
+  status        PaymentStatus @default(PENDING)
+  transactionId String?
+  paidAt        DateTime?
+  amount        Decimal       @db.Decimal(10, 2)
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Shipment {
+  id             Int            @id @default(autoincrement())
+  orderId        Int            @unique
+  provider       String
+  trackingNumber String?
+  status         ShipmentStatus @default(PENDING)
+  cost           Decimal        @db.Decimal(10, 2) @default(0)
+  estimatedAt    DateTime?
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+

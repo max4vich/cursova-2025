@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 const Login = () => {
   const { login, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,8 +20,7 @@ const Login = () => {
     event.preventDefault();
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      login(email);
+      await login({ email, password });
       toast.success("Вітаємо!", { description: "Вхід виконано успішно" });
       navigate(from, { replace: true });
     } catch (error) {
@@ -41,7 +41,13 @@ const Login = () => {
           placeholder="Email"
           onChange={(event) => setEmail(event.target.value)}
         />
-        <input type="password" placeholder="Пароль" required />
+        <input
+          type="password"
+          placeholder="Пароль"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
         <button className="pill-button pill-button--block" disabled={isLoading}>
           {isLoading ? "Вхід..." : "Увійти"}
         </button>

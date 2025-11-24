@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { products } from "../data/mockData";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { ProductCard } from "../components/ProductCard";
 import { ProductFilters } from "../components/ProductFilters";
+import { request } from "../api/client";
 
 const defaultFilters = {
   categories: [],
@@ -18,28 +19,50 @@ const heroHighlights = [
 const Home = ({ globalSearch }) => {
   const [filters, setFilters] = useState(defaultFilters);
   const [sort, setSort] = useState("default");
+  const [catalog, setCatalog] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ pageSize: 60 });
+      if (globalSearch) {
+        params.append("search", globalSearch);
+      }
+      if (filters.inStock) {
+        params.append("inStock", "true");
+      }
+      const data = await request(`/catalog/products?${params.toString()}`);
+      setCatalog(data.items);
+    } catch (error) {
+      toast.error("Не вдалося завантажити товари");
+    } finally {
+      setLoading(false);
+    }
+  }, [filters.inStock, globalSearch]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  useEffect(() => {
+    request("/catalog/categories")
+      .then(setCategories)
+      .catch(() => toast.error("Не вдалося завантажити категорії"));
+  }, []);
 
   const filteredProducts = useMemo(() => {
-    const result = products.filter((product) => {
-      if (
-        globalSearch &&
-        !product.name.toLowerCase().includes(globalSearch.toLowerCase())
-      ) {
-        return false;
-      }
-
+    const result = catalog.filter((product) => {
       if (
         filters.categories.length > 0 &&
-        !filters.categories.includes(product.category)
+        !filters.categories.includes(product.category?.slug ?? product.category)
       ) {
         return false;
       }
 
-      const effectivePrice = product.discount
-        ? product.price * (1 - product.discount / 100)
-        : product.price;
-
-      if (effectivePrice > filters.maxPrice) {
+      const effectivePrice = Number(product.price);
+      if (filters.maxPrice && effectivePrice > filters.maxPrice) {
         return false;
       }
 
@@ -52,16 +75,16 @@ const Home = ({ globalSearch }) => {
 
     const sorted = [...result];
     if (sort === "price-desc") {
-      return sorted.sort((a, b) => b.price - a.price);
+      return sorted.sort((a, b) => Number(b.price) - Number(a.price));
     }
     if (sort === "price-asc") {
-      return sorted.sort((a, b) => a.price - b.price);
+      return sorted.sort((a, b) => Number(a.price) - Number(b.price));
     }
     if (sort === "rating") {
-      return sorted.sort((a, b) => b.rating - a.rating);
+      return sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     }
     return sorted;
-  }, [filters, globalSearch, sort]);
+  }, [catalog, filters, sort]);
 
   const handleReset = () => setFilters(defaultFilters);
 
@@ -113,6 +136,7 @@ const Home = ({ globalSearch }) => {
             filters={filters}
             onFilterChange={setFilters}
             onClearFilters={handleReset}
+            categories={categories}
           />
         </div>
 
@@ -132,7 +156,11 @@ const Home = ({ globalSearch }) => {
             </select>
           </header>
 
-          {filteredProducts.length === 0 ? (
+          {loading ? (
+            <div className="empty-state">
+              <p>Завантаження товарів...</p>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="empty-state">
               <p>Нічого не знайдено. Спробуйте змінити фільтри.</p>
             </div>

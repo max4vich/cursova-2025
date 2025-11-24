@@ -1,6 +1,9 @@
-import { categories } from "../data/mockData";
-
-export const ProductFilters = ({ filters, onFilterChange, onClearFilters }) => {
+export const ProductFilters = ({
+  filters,
+  onFilterChange,
+  onClearFilters,
+  categories = [],
+}) => {
   const handleCategoryToggle = (slug) => {
     const exists = filters.categories.includes(slug);
     const updated = exists
@@ -34,33 +37,43 @@ export const ProductFilters = ({ filters, onFilterChange, onClearFilters }) => {
 
       <div className="filters-card__section">
         <p className="section-title">Категорії</p>
-        <div className="filters-card__list">
-          {categories.map((category) => (
-            <label key={category.id} className="checkbox">
-              <input
-                type="checkbox"
-                checked={filters.categories.includes(category.slug)}
-                onChange={() => handleCategoryToggle(category.slug)}
-              />
-              <span>{category.name}</span>
-            </label>
-          ))}
-        </div>
+        {categories.length === 0 ? (
+          <p className="muted small">Категорії завантажуються...</p>
+        ) : (
+          <div className="filters-card__list">
+            {categories.map((category) => (
+              <label key={category.id} className="checkbox">
+                <input
+                  type="checkbox"
+                  checked={filters.categories.includes(category.slug)}
+                  onChange={() => handleCategoryToggle(category.slug)}
+                />
+                <span>{category.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="filters-card__section">
         <p className="section-title">
           Ціна до <strong>{filters.maxPrice.toLocaleString("uk-UA")} ₴</strong>
         </p>
-        <input
-          type="range"
-          min="1000"
-          max="100000"
-          step="1000"
-          value={filters.maxPrice}
-          onChange={handlePriceChange}
-          style={{ "--value": filters.maxPrice }}
-        />
+        <div className="filters-card__slider">
+          <input
+            type="range"
+            min="1000"
+            max="100000"
+            step="1000"
+            value={filters.maxPrice}
+            onChange={handlePriceChange}
+            style={{
+              "--value": filters.maxPrice,
+              "--min": 1000,
+              "--max": 100000,
+            }}
+          />
+        </div>
         <div className="filters-card__range">
           <span>1 000 ₴</span>
           <span>100 000 ₴</span>

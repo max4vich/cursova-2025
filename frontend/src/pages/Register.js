@@ -9,6 +9,7 @@ const Register = () => {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    password: "",
     phone: "",
     address: "",
   });
@@ -27,7 +28,7 @@ const Register = () => {
     setIsSubmitting(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 600));
-      register(form);
+      await register(form);
       toast.success("Акаунт створено");
       navigate("/");
     } catch (error) {
@@ -63,6 +64,15 @@ const Register = () => {
           value={form.phone}
           onChange={handleChange}
           required
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Пароль (мін. 6 символів)"
+          value={form.password}
+          onChange={handleChange}
+          required
+          minLength={6}
         />
         <input
           name="address"

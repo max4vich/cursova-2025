@@ -1,29 +1,78 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Navigate } from "react-router-dom";
-import { categories, products } from "../data/mockData";
+import { toast } from "sonner";
 import { useCart } from "../contexts/CartContext";
-
-const getCategoryName = (slug) =>
-  categories.find((category) => category.slug === slug)?.name || slug;
+import { request } from "../api/client";
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const product = products.find((item) => item.id === Number(id));
   const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [notFound, setNotFound] = useState(false);
 
-  if (!product) {
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await request(`/catalog/products/${id}`);
+        setProduct(data);
+      } catch (error) {
+        setNotFound(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [id]);
+
+  const productId = product?.id ?? null;
+  const isInCart = useMemo(
+    () => (productId ? items.some((item) => item.productId === productId) : false),
+    [items, productId]
+  );
+
+  if (notFound) {
     return <Navigate to="/" replace />;
   }
 
-  const priceWithDiscount = product.discount
-    ? Math.round(product.price * (1 - product.discount / 100))
-    : product.price;
+  if (loading || !product) {
+    return (
+      <div className="page product-page">
+        <p>Завантаження товару...</p>
+      </div>
+    );
+  }
 
-  const handleAdd = () => {
-    addItem(product.id, quantity);
-    navigate("/cart");
+  const price = Number(product.price);
+  const compareAt = product.compareAt ? Number(product.compareAt) : null;
+  const oldPrice =
+    compareAt && compareAt > price
+      ? compareAt
+      : product.discount
+      ? price
+      : null;
+  const priceWithDiscount =
+    product.discount && !compareAt
+      ? Math.round(price * (1 - product.discount / 100))
+      : price;
+  const savings =
+    oldPrice && oldPrice > priceWithDiscount ? oldPrice - priceWithDiscount : 0;
+
+  const handleAdd = async () => {
+    if (isInCart) {
+      navigate("/cart");
+      return;
+    }
+    try {
+      await addItem(product.id, quantity);
+      toast.success("Товар у кошику");
+      navigate("/cart");
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   const handleQuantityChange = (step) => {
@@ -42,16 +91,18 @@ const ProductDetail = () => {
       <div className="product-focus">
         <div className="product-focus__media">
           <div className="product-focus__image">
-            <img src={product.image} alt={product.name} />
-            {product.discount && (
-              <span className="product-card__badge">-{product.discount}%</span>
+            <img src={product.imageUrl || product.image} alt={product.name} />
+            {oldPrice && (
+              <span className="product-card__badge">
+                -{Math.round(((oldPrice - price) / oldPrice) * 100)}%
+              </span>
             )}
           </div>
 
           <div className="product-focus__stats">
             <div>
               <p className="muted">Категорія</p>
-              <strong>{getCategoryName(product.category)}</strong>
+              <strong>{product.category?.name ?? "Категорія"}</strong>
             </div>
             <div>
               <p className="muted">Рейтинг</p>
@@ -68,7 +119,7 @@ const ProductDetail = () => {
 
         <div className="product-focus__info">
           <header>
-            <p className="muted">{getCategoryName(product.category)}</p>
+            <p className="muted">{product.category?.name}</p>
             <h1>{product.name}</h1>
             <p className="product-focus__description">{product.description}</p>
           </header>
@@ -78,28 +129,33 @@ const ProductDetail = () => {
               <p className="muted">Ціна</p>
               <div className="product-detail__price">
                 <strong>{priceWithDiscount.toLocaleString("uk-UA")} ₴</strong>
-                {product.discount && (
-                  <span className="struck">
-                    {product.price.toLocaleString("uk-UA")} ₴
-                  </span>
+                {oldPrice && (
+                  <span className="struck">{oldPrice.toLocaleString("uk-UA")} ₴</span>
                 )}
               </div>
             </div>
-            {product.discount && (
+            {savings > 0 && (
               <div className="price-benefit">
-                Економія {(product.price - priceWithDiscount).toLocaleString("uk-UA")} ₴
+                Економія {savings.toLocaleString("uk-UA")} ₴
               </div>
             )}
           </div>
 
           <div className="product-quantity">
             <span>Кількість</span>
-            <div className="quantity quantity--large">
-              <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}>
+            <div className="quantity quantity--large" role="group" aria-label="Кількість">
+              <button
+                type="button"
+                className="quantity__button"
+                onClick={() => handleQuantityChange(-1)}
+                disabled={quantity <= 1}
+              >
                 -
               </button>
-              <span>{quantity}</span>
+              <span className="quantity__value">{quantity}</span>
               <button
+                type="button"
+                className="quantity__button"
                 onClick={() => handleQuantityChange(1)}
                 disabled={quantity >= product.stock}
               >
@@ -114,7 +170,7 @@ const ProductDetail = () => {
               onClick={handleAdd}
               disabled={product.stock === 0}
             >
-              Додати до кошика
+              {product.stock === 0 ? "Немає в наявності" : isInCart ? "В кошику" : "Додати до кошика"}
             </button>
           </div>
         </div>

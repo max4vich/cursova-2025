@@ -12,6 +12,9 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Products from "./pages/admin/Products";
 import Orders from "./pages/admin/Orders";
+import Users from "./pages/admin/Users";
+import Categories from "./pages/admin/Categories";
+import Promotions from "./pages/admin/Promotions";
 import { Header } from "./components/Header";
 
 const App = () => {
@@ -35,7 +38,10 @@ const App = () => {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="products" element={<Products />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="promotions" element={<Promotions />} />
             <Route path="orders" element={<Orders />} />
+            <Route path="users" element={<Users />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

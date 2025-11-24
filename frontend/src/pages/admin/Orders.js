@@ -1,65 +1,111 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { mockOrders } from "../../data/mockData";
+import { RefreshCw } from "lucide-react";
+import useAdminData from "../../hooks/useAdminData";
+import { adminApi } from "../../api/admin";
+import AdminPageHeader from "../../components/admin/AdminPageHeader";
+import AdminToolbar from "../../components/admin/AdminToolbar";
+import AdminTable from "../../components/admin/AdminTable";
+import StatusBadge from "../../components/admin/StatusBadge";
 
-const statuses = ["processing", "shipped", "delivered"];
+const orderStatuses = ["PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
 
 const Orders = () => {
-  const [orders, setOrders] = useState(mockOrders);
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const handleStatusChange = (orderId, status) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status } : order
-      )
-    );
-    toast.info("Статус замовлення оновлено");
+  const { data: orders = [], loading, reload } = useAdminData(
+    () => adminApi.getOrders(),
+    [],
+    { initialData: [] }
+  );
+
+  const filteredOrders = useMemo(() => {
+    if (statusFilter === "all") return orders;
+    return orders.filter((order) => order.status === statusFilter);
+  }, [orders, statusFilter]);
+
+  const handleStatusChange = async (orderId, status) => {
+    try {
+      await adminApi.updateOrderStatus(orderId, status);
+      toast.success("Статус оновлено");
+      await reload();
+    } catch (error) {
+      toast.error(error.message || "Не вдалося оновити статус");
+    }
   };
 
   return (
     <div className="admin-page">
-      <h1>Замовлення</h1>
+      <AdminPageHeader
+        title="Замовлення"
+        description="Актуальні платежі та відвантаження"
+        actions={
+          <button type="button" className="pill-button pill-button--ghost" onClick={reload}>
+            <RefreshCw size={16} />
+            Оновити
+          </button>
+        }
+      />
+
+      <AdminToolbar>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <option value="all">Усі статуси</option>
+          {orderStatuses.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+      </AdminToolbar>
+
       <section className="card">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Клієнт</th>
-              <th>Сума</th>
-              <th>Оплата</th>
-              <th>Доставка</th>
-              <th>Статус</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td>{order.id}</td>
-                <td>
-                  <strong>{order.customerName}</strong>
-                  <p className="muted">{order.customerEmail}</p>
-                </td>
-                <td>{order.total.toLocaleString("uk-UA")} ₴</td>
-                <td>{order.paymentMethod}</td>
-                <td>{order.deliveryMethod}</td>
-                <td>
-                  <select
-                    value={order.status}
-                    onChange={(event) =>
-                      handleStatusChange(order.id, event.target.value)
-                    }
-                  >
-                    {statuses.map((status) => (
+        {loading ? (
+          <p className="muted">Завантаження…</p>
+        ) : (
+          <AdminTable
+            data={filteredOrders}
+            columns={[
+              {
+                header: "Номер",
+                render: (order) => order.orderNumber || `#${order.id}`,
+              },
+              {
+                header: "Клієнт",
+                render: (order) => (
+                  <div>
+                    <strong>{order.user?.name || "Гість"}</strong>
+                    <p className="muted small">{order.user?.email}</p>
+                  </div>
+                ),
+              },
+              {
+                header: "Сума",
+                render: (order) => `${Number(order.total).toLocaleString("uk-UA")} ₴`,
+              },
+              {
+                header: "Оплата",
+                render: (order) => <StatusBadge status={order.payment?.status || "N/A"} />,
+              },
+              {
+                header: "Доставка",
+                render: (order) => <StatusBadge status={order.shipment?.status || "N/A"} />,
+              },
+              {
+                header: "Статус",
+                render: (order) => (
+                  <select value={order.status} onChange={(event) => handleStatusChange(order.id, event.target.value)}>
+                    {orderStatuses.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>
                     ))}
                   </select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                ),
+              },
+            ]}
+            emptyLabel="Замовлень ще немає"
+          />
+        )}
       </section>
     </div>
   );
