@@ -1,3 +1,31 @@
+/**
+ * @GofPattern:Observer
+ * 
+ * GoF Патерн: Observer (Поведінковий патерн)
+ * 
+ * Реалізація через React Context API:
+ * React Context API реалізує концепцію Observer pattern, де компоненти підписуються
+ * на зміни стану авторизації та автоматично оновлюються при його зміні.
+ * 
+ * Призначення:
+ * Забезпечує механізм підписки/сповіщення для розподілу стану авторизації користувача
+ * між багатьма компонентами без необхідності передачі props через кожен рівень дерева компонентів.
+ * 
+ * Як працює Observer pattern тут:
+ * - Provider (AuthProvider) - Subject: зберігає стан авторизації та сповіщає підписників про зміни
+ * - Consumer компоненти - Observers: підписуються через useAuth() hook та отримують оновлення
+ * - При зміні user/status (login, logout, updateProfile) всі підписані компоненти автоматично ре-рендеряться
+ * 
+ * Переваги:
+ * - Централізоване керування станом авторизації
+ * - Автоматичне оновлення всіх підписані компонентів при зміні стану
+ * - Уникнення "prop drilling" - передачі props через багато рівнів
+ * - Легке додавання нових компонентів, що потребують доступу до стану авторизації
+ * 
+ * Використання:
+ * Використовується у всіх компонентах, що потребують інформації про поточного користувача
+ * через хук useAuth(). Наприклад: Header, Profile, Protected routes тощо.
+ */
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { request, setToken, getToken } from "../api/client";
 
@@ -80,6 +108,16 @@ export const AuthProvider = ({ children }) => {
     persistUser(null);
   };
 
+  const updateProfile = async (payload) => {
+    const data = await request("/auth/me", {
+      method: "PUT",
+      body: payload,
+    });
+    setUser(data);
+    persistUser(data);
+    return data;
+  };
+
   const value = useMemo(
     () => ({
       user,
@@ -89,6 +127,7 @@ export const AuthProvider = ({ children }) => {
       login,
       register,
       logout,
+      updateProfile,
       refreshProfile: loadProfile,
     }),
     [user, status]

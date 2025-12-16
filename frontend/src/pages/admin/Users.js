@@ -35,12 +35,12 @@ const Users = () => {
     {
       label: "Всього користувачів",
       value: users.length,
-      icon: <UsersIcon size={18} />,
+      icon: <UsersIcon size={18} color="white" />,
     },
     {
       label: "Адміністратори",
       value: users.filter((user) => user.role === "ADMIN").length,
-      icon: <Shield size={18} />,
+      icon: <Shield size={18} color="white" />,
     },
   ];
 

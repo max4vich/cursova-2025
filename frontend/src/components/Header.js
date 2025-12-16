@@ -10,7 +10,7 @@ const navItems = [
   { to: "/checkout", label: "Оформлення" },
 ];
 
-export const Header = ({ onSearchChange }) => {
+export const Header = () => {
   const navigate = useNavigate();
   const { itemCount } = useCart();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -56,7 +56,7 @@ export const Header = ({ onSearchChange }) => {
             navigate("/profile");
           }}
         >
-          {initials || <User size={16} />}
+          {initials || <User size={16} color="white" />}
         </button>
         {isAdmin && (
           <button
@@ -66,7 +66,7 @@ export const Header = ({ onSearchChange }) => {
               navigate("/admin");
             }}
           >
-            <LayoutDashboard size={16} />
+            <LayoutDashboard size={16} color="white" />
             <span>Адмін</span>
           </button>
         )}
@@ -77,7 +77,7 @@ export const Header = ({ onSearchChange }) => {
             handleLogout();
           }}
         >
-          <LogOut size={16} />
+          <LogOut size={16} color="white" />
           <span>Вийти</span>
         </button>
       </div>
@@ -115,26 +115,6 @@ export const Header = ({ onSearchChange }) => {
               <p className="logo__subtitle">м. Львів, вул. С. Бандери, 6</p>
             </div>
           </Link>
-          <div className="header__search">
-            <div className="header__search-wrapper">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-              >
-                <path
-                  fill="currentColor"
-                  d="m21 20.29-4.17-4.17a7.5 7.5 0 1 0-1.41 1.41L19.59 22zm-6.5-3.79a6 6 0 1 1 0-12 6 6 0 0 1 0 12"
-                />
-              </svg>
-              <input
-                type="search"
-                placeholder="Пошук товарів..."
-                onChange={(event) => onSearchChange?.(event.target.value)}
-              />
-            </div>
-          </div>
         </div>
 
         <nav className="header__nav">{renderNavLinks()}</nav>
@@ -147,7 +127,7 @@ export const Header = ({ onSearchChange }) => {
               setMobileMenuOpen(false);
             }}
           >
-            <ShoppingCart size={20} />
+            <ShoppingCart size={20} color="white" />
             {itemCount > 0 && <span className="badge">{itemCount}</span>}
           </button>
           {renderActions()}
@@ -160,7 +140,7 @@ export const Header = ({ onSearchChange }) => {
           aria-expanded={isMobileMenuOpen}
           onClick={() => setMobileMenuOpen((prev) => !prev)}
         >
-          {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          {isMobileMenuOpen ? <X size={20} color="white" /> : <Menu size={20} color="white" />}
         </button>
       </div>
 
@@ -174,7 +154,7 @@ export const Header = ({ onSearchChange }) => {
               closeMobileMenu();
             }}
           >
-            <ShoppingCart size={20} />
+            <ShoppingCart size={20} color="white" />
             {itemCount > 0 && <span className="badge">{itemCount}</span>}
           </button>
           {renderActions(closeMobileMenu)}

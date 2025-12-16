@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { toast } from "sonner";
 import { Edit, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { adminApi } from "../../api/admin";
+import { flattenCategoryTree, getParentOptions } from "../../utils/categoryTree";
 import AdminToolbar from "./AdminToolbar";
 import AdminTable from "./AdminTable";
 import AdminModal from "./AdminModal";
@@ -15,7 +16,7 @@ const defaultForm = {
 };
 
 const CategoryManager = ({ nested = false }) => {
-  const [items, setItems] = useState([]);
+  const [categoryTree, setCategoryTree] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -26,7 +27,7 @@ const CategoryManager = ({ nested = false }) => {
     setLoading(true);
     try {
       const data = await adminApi.getCategories();
-      setItems(data || []);
+      setCategoryTree(data || []);
     } catch (error) {
       toast.error(error.message || "Не вдалося завантажити категорії");
     } finally {
@@ -38,15 +39,18 @@ const CategoryManager = ({ nested = false }) => {
     loadCategories();
   }, []);
 
+  const flatItems = useMemo(() => flattenCategoryTree(categoryTree), [categoryTree]);
+  const parentOptions = useMemo(() => getParentOptions(categoryTree), [categoryTree]);
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return items;
-    return items.filter(
+    if (!query) return flatItems;
+    return flatItems.filter(
       (category) =>
         category.name.toLowerCase().includes(query) ||
         category.slug?.toLowerCase().includes(query)
     );
-  }, [items, search]);
+  }, [flatItems, search]);
 
   const openModal = (category = null) => {
     if (category) {
@@ -105,11 +109,11 @@ const CategoryManager = ({ nested = false }) => {
         </div>
         <div className="manager-card__actions">
           <button type="button" className="pill-button" onClick={() => openModal()}>
-            <Plus size={16} />
+            <Plus size={16} color="white" />
             Нова категорія
           </button>
           <button type="button" className="pill-button pill-button--ghost" onClick={loadCategories}>
-            <RefreshCw size={16} />
+            <RefreshCw size={16} color="white" />
             Оновити
           </button>
         </div>
@@ -126,11 +130,19 @@ const CategoryManager = ({ nested = false }) => {
           <AdminTable
             data={filtered}
             columns={[
-              { header: "Назва", key: "name" },
+              {
+                header: "Назва",
+                render: (row) => (
+                  <div className={row.parentId ? "category-row category-row--child" : "category-row"}>
+                    {row.name}
+                  </div>
+                ),
+              },
               { header: "Slug", key: "slug" },
               {
                 header: "Parent",
-                render: (row) => items.find((item) => item.id === row.parentId)?.name || "—",
+                render: (row) =>
+                  parentOptions.find((item) => item.id === row.parentId)?.name || "—",
               },
             ]}
             renderActions={(row) => (
@@ -141,7 +153,7 @@ const CategoryManager = ({ nested = false }) => {
                   onClick={() => openModal(row)}
                   title="Редагувати"
                 >
-                  <Edit size={16} />
+                  <Edit size={16} color="white" />
                 </button>
                 <button
                   className="link-button link-button--icon"
@@ -149,7 +161,7 @@ const CategoryManager = ({ nested = false }) => {
                   onClick={() => handleDelete(row)}
                   title="Видалити"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} color="white" />
                 </button>
               </>
             )}
@@ -199,7 +211,7 @@ const CategoryManager = ({ nested = false }) => {
               onChange={(event) => setForm({ ...form, parentId: event.target.value })}
             >
               <option value="">Без категорії</option>
-              {items
+              {parentOptions
                 .filter((category) => !editing || category.id !== editing.id)
                 .map((category) => (
                   <option key={category.id} value={category.id}>

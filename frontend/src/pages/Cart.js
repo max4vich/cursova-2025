@@ -29,17 +29,17 @@ const Cart = () => {
   const benefitCards = useMemo(
     () => [
       {
-        icon: Truck,
+        icon: (props) => <Truck {...props} color="white" />,
         title: "Швидка доставка",
         description: "Нова Пошта або кур'єр вже за 1–2 дні",
       },
       {
-        icon: ShieldCheck,
+        icon: (props) => <ShieldCheck {...props} color="white" />,
         title: "Безпечні платежі",
         description: "Підтримуємо Apple Pay, Google Pay та LiqPay",
       },
       {
-        icon: PackageCheck,
+        icon: (props) => <PackageCheck {...props} color="white" />,
         title: "14 днів на повернення",
         description: "Якщо товар не підійшов або має дефекти",
       },
@@ -53,6 +53,20 @@ const Cart = () => {
       { label: "Ноутбуки", slug: "laptops" },
       { label: "Аксесуари", slug: "accessories" },
       { label: "Розумний дім", slug: "smart-home" },
+    ],
+    []
+  );
+
+  const shippingHighlights = useMemo(
+    () => [
+      {
+        title: "Нова Пошта",
+        description: "Доставка до відділення або вашої адреси по всій Україні",
+      },
+      {
+        title: "Самовивіз із шоуруму",
+        description: "Київ, Львів чи Дніпро — заберіть у зручному місці безкоштовно",
+      },
     ],
     []
   );
@@ -121,29 +135,10 @@ const Cart = () => {
             <button className="pill-button" onClick={() => navigate("/")}>
               До каталогу
             </button>
-            <button
-              className="pill-button pill-button--ghost"
-              onClick={() => navigate("/checkout")}
-            >
-              Перейти до оформлення
-            </button>
           </div>
         </div>
 
         <section className="cart-empty__suggestions">
-          <div className="cart-empty__chips">
-            {quickLinks.map((link) => (
-              <button
-                key={link.slug}
-                className="cart-chip"
-                type="button"
-                onClick={() => handleBrowseCategory(link.slug)}
-              >
-                {link.label}
-              </button>
-            ))}
-          </div>
-
           <div className="cart-empty__recommendations">
             <div className="cart-empty__recommendations-header">
               <div>
@@ -216,6 +211,30 @@ const Cart = () => {
         })}
       </section>
 
+      <section className="cart-shipping-options card">
+        <header className="cart-shipping-options__header">
+          <div>
+            <p className="cart-page__eyebrow">Вибір доставки</p>
+            <h2>Нова Пошта або самовивіз</h2>
+            <p className="muted small">Оберете конкретний спосіб на кроці оформлення</p>
+          </div>
+          <button className="pill-button pill-button--ghost" onClick={() => navigate("/checkout")}>
+            До оформлення
+          </button>
+        </header>
+        <div className="cart-shipping-options__grid">
+          {shippingHighlights.map((option) => (
+            <article key={option.title} className="cart-shipping-card">
+              <h3>{option.title}</h3>
+              <p className="muted small">{option.description}</p>
+              <button className="link-button" onClick={() => navigate("/checkout")}>
+                Обрати доставку
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <div className="cart-layout">
         <div className="cart-items">
           {loading ? (
@@ -247,7 +266,7 @@ const Cart = () => {
                             updateQuantity(item.id, Math.max(1, item.quantity - 1))
                           }
                         >
-                          <Minus size={16} />
+                          <Minus size={16} color="white" />
                         </button>
                         <span className="quantity__value">{item.quantity}</span>
                         <button
@@ -260,14 +279,14 @@ const Cart = () => {
                             )
                           }
                         >
-                          <Plus size={16} />
+                          <Plus size={16} color="white" />
                         </button>
                       </div>
                       <button
                         className="icon-button"
                         onClick={() => removeItem(item.id)}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={16} color="white" />
                       </button>
                     </div>
                   </div>
@@ -294,6 +313,12 @@ const Cart = () => {
               <span>До сплати</span>
               <strong>{total.toLocaleString("uk-UA")} ₴</strong>
             </div>
+          </div>
+
+          <div className="summary-note">
+            <p className="muted small">
+              Спосіб доставки та оплати обираєте на наступному кроці. Доступні Нова Пошта та самовивіз.
+            </p>
           </div>
 
           <div className="summary-card__promo">

@@ -1,32 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
 import { request } from "../api/client";
 
-const initialDelivery = {
-  method: "courier",
-  city: "",
-  address: "",
-};
-
 const deliveryOptions = [
   {
-    id: "courier",
-    title: "Кур'єрська доставка",
-    description: "Привеземо замовлення за вказаною адресою",
+    id: "nova-poshta",
+    title: "Нова Пошта",
+    description: "Доставка до відділення або кур'єром",
   },
   {
     id: "pickup",
     title: "Самовивіз",
-    description: "Заберіть замовлення з нашого магазину",
+    description: "Заберіть замовлення у шоурумі",
   },
 ];
 
+const pickupLocations = [
+  { id: "store-kyiv", title: "Київ, вул. Хрещатик, 1" },
+  { id: "store-lviv", title: "Львів, пл. Ринок, 15" },
+  { id: "store-dnipro", title: "Дніпро, пр. Дмитра Яворницького, 25" },
+];
+
+const initialDelivery = {
+  method: "nova-poshta",
+  city: "",
+  department: "",
+  pickupLocation: pickupLocations[0].title,
+};
+
 const paymentOptions = [
-  { id: "card", title: "Карта онлайн", description: "Безпечна оплата прямо на сайті" },
-  { id: "cash", title: "Післяплата", description: "Оплата під час отримання" },
+  { id: "card", title: "Карта онлайн", description: "Оплата зараз на сайті" },
+  { id: "cash", title: "Післяплата", description: "Оплата при отриманні" },
 ];
 
 const Checkout = () => {
@@ -42,20 +49,47 @@ const Checkout = () => {
   });
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmation, setConfirmation] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState(null);
+
+  useEffect(() => {
+    setContact({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+    });
+  }, [user]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && !confirmation) {
     return <Navigate to="/cart" replace />;
   }
 
+  const validateDelivery = () => {
+    if (delivery.method === "nova-poshta") {
+      if (!delivery.city || !delivery.department) {
+        throw new Error("Вкажіть місто та відділення Нової Пошти");
+      }
+    }
+    if (delivery.method === "pickup" && !delivery.pickupLocation) {
+      throw new Error("Оберіть точку самовивозу");
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+    try {
+      validateDelivery();
+    } catch (validationError) {
+      toast.error(validationError.message);
+      return;
+    }
     setIsSubmitting(true);
     try {
-      await request("/orders/checkout", {
+      const order = await request("/orders/checkout", {
         method: "POST",
         body: {
           shippingMethod: delivery.method,
@@ -68,14 +102,56 @@ const Checkout = () => {
       });
       await clearCart();
       await refresh();
-      toast.success("Замовлення оформлено!");
-      navigate("/");
+      setConfirmation(order);
+      setPaymentStatus("success");
+      toast.success("Оплата успішна");
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Не вдалося оформити замовлення");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (paymentStatus === "success" && confirmation) {
+    return (
+      <div className="page checkout-page">
+        <section className="card checkout-confirmation">
+          <p className="checkout-confirmation__eyebrow">Оплата успішна</p>
+          <h1>Дякуємо за замовлення!</h1>
+          <p className="muted">
+            Номер замовлення {confirmation.orderNumber || `#${confirmation.id}`}. Ми вже готуємо його до
+            відправлення та повідомимо про зміну статусу.
+          </p>
+          <div className="checkout-confirmation__details">
+            <div>
+              <p className="muted small">Контакти</p>
+              <strong>{confirmation.contactName}</strong>
+              <p className="muted small">{confirmation.contactEmail}</p>
+              <p className="muted small">{confirmation.contactPhone}</p>
+            </div>
+            <div>
+              <p className="muted small">Доставка</p>
+              <strong>{confirmation.deliveryMethod === "pickup" ? "Самовивіз" : "Нова Пошта"}</strong>
+              {confirmation.deliveryCity && (
+                <p className="muted small">{confirmation.deliveryCity}</p>
+              )}
+              {confirmation.deliveryAddress && (
+                <p className="muted small">{confirmation.deliveryAddress}</p>
+              )}
+            </div>
+          </div>
+          <div className="checkout-confirmation__actions">
+            <button className="pill-button" onClick={() => navigate("/")}>
+              Повернутись до каталогу
+            </button>
+            <button className="pill-button pill-button--ghost" onClick={() => navigate("/profile")}>
+              Переглянути замовлення
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="page checkout-page">
@@ -123,20 +199,36 @@ const Checkout = () => {
                 </button>
               ))}
             </div>
-            {delivery.method !== "pickup" && (
+            {delivery.method === "nova-poshta" ? (
               <div className="form-grid">
                 <input
                   placeholder="Місто"
-                  required
                   value={delivery.city}
                   onChange={(event) => setDelivery({ ...delivery, city: event.target.value })}
+                  required
                 />
                 <input
-                  placeholder="Адреса"
+                  placeholder="Відділення або адреса"
+                  value={delivery.department}
+                  onChange={(event) => setDelivery({ ...delivery, department: event.target.value })}
                   required
-                  value={delivery.address}
-                  onChange={(event) => setDelivery({ ...delivery, address: event.target.value })}
                 />
+              </div>
+            ) : (
+              <div className="form-grid">
+                <select
+                  value={delivery.pickupLocation}
+                  onChange={(event) => setDelivery({ ...delivery, pickupLocation: event.target.value })}
+                >
+                  {pickupLocations.map((location) => (
+                    <option key={location.id} value={location.title}>
+                      {location.title}
+                    </option>
+                  ))}
+                </select>
+                <p className="muted small">
+                  Оберіть шоурум, де вам зручно отримати замовлення. Зберігаємо його протягом 5 днів.
+                </p>
               </div>
             )}
           </div>
@@ -156,6 +248,14 @@ const Checkout = () => {
                 </button>
               ))}
             </div>
+            {payment === "card" && (
+              <div className="checkout-payment-note">
+                <p className="muted small">
+                  Ми використовуємо захищений шлюз для імітації онлайн-оплати. Після натискання кнопки отримаєте
+                  підтвердження успіху.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="checkout-section">
@@ -189,7 +289,7 @@ const Checkout = () => {
             <strong>{total.toLocaleString("uk-UA")} ₴</strong>
           </div>
           <button className="pill-button pill-button--block" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Обробка..." : "Підтвердити замовлення"}
+            {isSubmitting ? "Оплата..." : "Підтвердити замовлення"}
           </button>
         </aside>
       </form>

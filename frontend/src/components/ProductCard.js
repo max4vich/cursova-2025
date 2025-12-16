@@ -45,7 +45,7 @@ export const ProductCard = ({ product }) => {
           {product.name}
         </Link>
         <div className="product-card__rating">
-          <Star size={16} />
+          <Star size={16} color="white" />
           <span>{product.rating ?? 4.8}</span>
           <span className="muted">({product.reviews ?? 0})</span>
         </div>
@@ -63,7 +63,7 @@ export const ProductCard = ({ product }) => {
             onClick={handleAdd}
             disabled={product.stock === 0 || isInCart}
           >
-            <ShoppingCart size={16} />
+            <ShoppingCart size={16} color="white" />
             {product.stock === 0 ? "Немає в наявності" : isInCart ? "В кошику" : "До кошика"}
           </button>
         </div>

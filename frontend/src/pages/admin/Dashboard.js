@@ -53,22 +53,22 @@ const Dashboard = () => {
       {
         label: "Виторг",
         value: `${stats.revenue.toLocaleString("uk-UA")} ₴`,
-        icon: <BarChart2 size={18} />,
+        icon: <BarChart2 size={18} color="white" />,
       },
       {
         label: "Активні товари",
         value: stats.products,
-        icon: <Package size={18} />,
+        icon: <Package size={18} color="white" />,
       },
       {
         label: "Замовлення",
         value: stats.orders,
-        icon: <ShoppingBag size={18} />,
+        icon: <ShoppingBag size={18} color="white" />,
       },
       {
         label: "Користувачі",
         value: stats.customers,
-        icon: <UsersIcon size={18} />,
+        icon: <UsersIcon size={18} color="white" />,
       },
     ],
     [stats]

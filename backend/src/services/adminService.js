@@ -2,16 +2,80 @@ const { prisma } = require("../libs/prisma");
 const { generateSlugFor } = require("../utils/slugify");
 const path = require("path");
 
-const listCategories = () =>
-  prisma.category.findMany({
+const buildCategoryTree = (items) =>
+  items.map((category) => ({
+    ...category,
+    children: category.children || [],
+  }));
+
+const listCategories = async () => {
+  const parents = await prisma.category.findMany({
+    where: { parentId: null },
     orderBy: { name: "asc" },
+    include: {
+      children: {
+        orderBy: { name: "asc" },
+      },
+    },
+  });
+  return buildCategoryTree(parents);
+};
+
+const ensureValidParentId = async ({ parentId, categoryId }) => {
+  if (parentId === undefined || parentId === null || parentId === "") {
+    return null;
+  }
+
+  const normalized = Number(parentId);
+  if (Number.isNaN(normalized)) {
+    const error = new Error("Некоректна батьківська категорія");
+    error.status = 400;
+    throw error;
+  }
+
+  if (categoryId && normalized === Number(categoryId)) {
+    const error = new Error("Категорія не може бути батьківською для себе");
+    error.status = 400;
+    throw error;
+  }
+
+  const parent = await prisma.category.findUnique({
+    where: { id: normalized },
   });
 
+  if (!parent) {
+    const error = new Error("Батьківську категорію не знайдено");
+    error.status = 404;
+    throw error;
+  }
+
+  if (parent.parentId) {
+    const error = new Error("Неможливо обрати дочірню категорію як батьківську");
+    error.status = 400;
+    throw error;
+  }
+
+  if (categoryId) {
+    const childrenCount = await prisma.category.count({
+      where: { parentId: Number(categoryId) },
+    });
+    if (childrenCount > 0) {
+      const error = new Error("Категорія має підкатегорії та не може стати дочірньою");
+      error.status = 400;
+      throw error;
+    }
+  }
+
+  return normalized;
+};
+
 const createCategory = async (payload) => {
+  const parentId = await ensureValidParentId({ parentId: payload.parentId });
   const slug = await generateSlugFor(prisma.category, payload.slug || payload.name, null, "category");
   return prisma.category.create({
     data: {
       ...payload,
+      parentId,
       slug,
     },
   });
@@ -19,6 +83,9 @@ const createCategory = async (payload) => {
 
 const updateCategory = async (id, payload) => {
   const data = { ...payload };
+  if (payload.parentId !== undefined) {
+    data.parentId = await ensureValidParentId({ parentId: payload.parentId, categoryId: id });
+  }
   if (payload.slug || payload.name) {
     data.slug = await generateSlugFor(
       prisma.category,

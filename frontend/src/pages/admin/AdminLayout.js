@@ -7,16 +7,18 @@ import {
   ArrowUpRight,
   Tags,
   TicketPercent,
+  BarChart3,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
 const links = [
-  { to: "/admin", label: "Дашборд", icon: <LayoutDashboard size={16} /> },
-  { to: "/admin/products", label: "Товари", icon: <Package size={16} /> },
-  { to: "/admin/categories", label: "Категорії", icon: <Tags size={16} /> },
-  { to: "/admin/promotions", label: "Промокоди", icon: <TicketPercent size={16} /> },
-  { to: "/admin/orders", label: "Замовлення", icon: <ShoppingBag size={16} /> },
-  { to: "/admin/users", label: "Користувачі", icon: <Users size={16} /> },
+  { to: "/admin", label: "Дашборд", icon: <LayoutDashboard size={16} color="white" /> },
+  { to: "/admin/products", label: "Товари", icon: <Package size={16} color="white" /> },
+  { to: "/admin/categories", label: "Категорії", icon: <Tags size={16} color="white" /> },
+  { to: "/admin/promotions", label: "Промокоди", icon: <TicketPercent size={16} color="white" /> },
+  { to: "/admin/orders", label: "Замовлення", icon: <ShoppingBag size={16} color="white" /> },
+  { to: "/admin/users", label: "Користувачі", icon: <Users size={16} color="white" /> },
+  { to: "/admin/reports", label: "Звіти", icon: <BarChart3 size={16} color="white" /> },
 ];
 
 const AdminLayout = () => {
@@ -65,7 +67,7 @@ const AdminLayout = () => {
           </div>
           <div className="admin-toolbar__right">
             <NavLink to="/" className="pill-button pill-button--muted">
-              <ArrowUpRight size={16} />
+              <ArrowUpRight size={16} color="white" />
               На сайт
             </NavLink>
           </div>

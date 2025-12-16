@@ -41,7 +41,7 @@ const Orders = () => {
         description="Актуальні платежі та відвантаження"
         actions={
           <button type="button" className="pill-button pill-button--ghost" onClick={reload}>
-            <RefreshCw size={16} />
+            <RefreshCw size={16} color="white" />
             Оновити
           </button>
         }
@@ -70,11 +70,29 @@ const Orders = () => {
                 render: (order) => order.orderNumber || `#${order.id}`,
               },
               {
-                header: "Клієнт",
+                header: "Контакти",
                 render: (order) => (
                   <div>
-                    <strong>{order.user?.name || "Гість"}</strong>
-                    <p className="muted small">{order.user?.email}</p>
+                    <strong>{order.contactName || order.user?.name || "Гість"}</strong>
+                    <p className="muted small">{order.contactEmail || order.user?.email || "—"}</p>
+                    <p className="muted small">{order.contactPhone || "—"}</p>
+                  </div>
+                ),
+              },
+              {
+                header: "Доставка",
+                render: (order) => (
+                  <div>
+                    <strong>
+                      {order.deliveryMethod === "pickup"
+                        ? "Самовивіз"
+                        : order.deliveryMethod === "nova-poshta"
+                        ? "Нова Пошта"
+                        : order.deliveryMethod || "—"}
+                    </strong>
+                    {order.deliveryCity && <p className="muted small">{order.deliveryCity}</p>}
+                    {order.deliveryAddress && <p className="muted small">{order.deliveryAddress}</p>}
+                    <StatusBadge status={order.shipment?.status || "N/A"} />
                   </div>
                 ),
               },
@@ -85,10 +103,6 @@ const Orders = () => {
               {
                 header: "Оплата",
                 render: (order) => <StatusBadge status={order.payment?.status || "N/A"} />,
-              },
-              {
-                header: "Доставка",
-                render: (order) => <StatusBadge status={order.shipment?.status || "N/A"} />,
               },
               {
                 header: "Статус",

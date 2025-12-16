@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, RefreshCw, Edit, Trash2, Upload, Package, Tag, Gift } from "lucide-react";
+import { Plus, RefreshCw, Edit, Trash2, Upload } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import AdminToolbar from "../../components/admin/AdminToolbar";
 import AdminTable from "../../components/admin/AdminTable";
 import AdminModal from "../../components/admin/AdminModal";
 import AdminStatsGrid from "../../components/admin/AdminStatsGrid";
-import AdminTabs from "../../components/admin/AdminTabs";
-import CategoryManager from "../../components/admin/CategoryManager";
-import PromotionManager from "../../components/admin/PromotionManager";
 import { adminApi } from "../../api/admin";
+import { buildCategoryOptions } from "../../utils/categoryTree";
 
 const createDefaultProduct = () => ({
   name: "",
@@ -33,7 +31,6 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [viewMode, setViewMode] = useState("table");
-  const [activePanel, setActivePanel] = useState("catalog");
 
   const loadProducts = useCallback(
     async (page = pagination.page) => {
@@ -64,9 +61,10 @@ const Products = () => {
   const loadMeta = useCallback(async () => {
     try {
       const categoryList = await adminApi.getCategories();
-      setCategories(categoryList || []);
-      if (!productForm.categoryId && categoryList?.length) {
-        setProductForm((prev) => ({ ...prev, categoryId: String(categoryList[0].id) }));
+      const options = buildCategoryOptions(categoryList || []);
+      setCategories(options);
+      if (!productForm.categoryId && options.length) {
+        setProductForm((prev) => ({ ...prev, categoryId: String(options[0].id) }));
       }
     } catch (error) {
       toast.error(error.message || "Не вдалося завантажити категорії");
@@ -160,33 +158,24 @@ const Products = () => {
       {
         label: "У каталозі",
         value: pagination.total,
-        icon: <RefreshCw size={16} />,
+        icon: <RefreshCw size={16} color="white" />,
       },
       {
         label: "Доступно в наявності",
         value: products.filter((item) => item.stock > 0).length,
-        icon: <Plus size={16} />,
+        icon: <Plus size={16} color="white" />,
       },
     ],
     [pagination.total, products]
   );
 
-  const managementTabs = useMemo(
-    () => [
-      { id: "catalog", label: "Каталог", icon: <Package size={16} /> },
-      { id: "categories", label: "Категорії", icon: <Tag size={16} />, badge: categories.length },
-      { id: "promotions", label: "Промокоди", icon: <Gift size={16} /> },
-    ],
-    [categories.length]
-  );
-
   const renderProductActions = (row) => (
     <>
       <button type="button" className="link-button link-button--icon" onClick={() => handleEdit(row)}>
-        <Edit size={16} />
+        <Edit size={16} color="white" />
       </button>
       <button type="button" className="link-button link-button--icon" onClick={() => handleDelete(row.id)}>
-        <Trash2 size={16} />
+        <Trash2 size={16} color="white" />
       </button>
     </>
   );
@@ -265,96 +254,65 @@ const Products = () => {
         description="Додавайте, редагуйте та публікуйте позиції"
         actions={
           <div className="admin-header-actions">
-            <button
-              type="button"
-              className="pill-button pill-button--ghost"
-              onClick={() => setActivePanel("categories")}
-            >
-              <Tag size={16} />
-              Категорії
-            </button>
-            <button
-              type="button"
-              className="pill-button pill-button--ghost"
-              onClick={() => setActivePanel("promotions")}
-            >
-              <Gift size={16} />
-              Промокоди
-            </button>
             <button type="button" className="pill-button" onClick={openCreateModal}>
-              <Plus size={16} />
+              <Plus size={16} color="white" />
               Додати товар
             </button>
           </div>
         }
       />
 
-      <AdminTabs tabs={managementTabs} active={activePanel} onChange={setActivePanel} />
+      <AdminStatsGrid items={productStats} />
 
-      {activePanel === "catalog" && (
-        <>
-          <AdminStatsGrid items={productStats} />
+      <AdminToolbar
+        right={
+          <>
+            <div className="admin-tabs admin-tabs--ghost">
+              <button
+                type="button"
+                className={viewMode === "table" ? "admin-tabs__active" : ""}
+                onClick={() => setViewMode("table")}
+              >
+                Таблиця
+              </button>
+              <button
+                type="button"
+                className={viewMode === "cards" ? "admin-tabs__active" : ""}
+                onClick={() => setViewMode("cards")}
+              >
+                Картки
+              </button>
+            </div>
+            <button type="button" className="pill-button pill-button--ghost" onClick={() => loadProducts()}>
+              <RefreshCw size={16} color="white" />
+              Оновити
+            </button>
+          </>
+        }
+      >
+        <input
+          placeholder="Пошук…"
+          value={filters.search}
+          onChange={(event) => setFilters({ ...filters, search: event.target.value })}
+        />
+        <select value={filters.category} onChange={(event) => setFilters({ ...filters, category: event.target.value })}>
+          <option value="">Усі категорії</option>
+          {categories.map((category) => (
+            <option key={`${category.slug}-${category.id}`} value={category.slug}>
+              {category.displayName}
+            </option>
+          ))}
+        </select>
+        <select value={filters.stock} onChange={(event) => setFilters({ ...filters, stock: event.target.value })}>
+          <option value="all">Будь-який залишок</option>
+          <option value="inStock">В наявності</option>
+        </select>
+      </AdminToolbar>
 
-          <AdminToolbar
-            right={
-              <>
-                <div className="admin-tabs admin-tabs--ghost">
-                  <button
-                    type="button"
-                    className={viewMode === "table" ? "admin-tabs__active" : ""}
-                    onClick={() => setViewMode("table")}
-                  >
-                    Таблиця
-                  </button>
-                  <button
-                    type="button"
-                    className={viewMode === "cards" ? "admin-tabs__active" : ""}
-                    onClick={() => setViewMode("cards")}
-                  >
-                    Картки
-                  </button>
-                </div>
-                <button type="button" className="pill-button pill-button--ghost" onClick={() => loadProducts()}>
-                  <RefreshCw size={16} />
-                  Оновити
-                </button>
-              </>
-            }
-          >
-            <input
-              placeholder="Пошук…"
-              value={filters.search}
-              onChange={(event) => setFilters({ ...filters, search: event.target.value })}
-            />
-            <select
-              value={filters.category}
-              onChange={(event) => setFilters({ ...filters, category: event.target.value })}
-            >
-              <option value="">Усі категорії</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.slug}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filters.stock}
-              onChange={(event) => setFilters({ ...filters, stock: event.target.value })}
-            >
-              <option value="all">Будь-який залишок</option>
-              <option value="inStock">В наявності</option>
-            </select>
-          </AdminToolbar>
-
-          <section className="card">
-            <h3>Каталог</h3>
-            {loading ? <p className="muted">Завантаження...</p> : viewMode === "table" ? productTable : productCards}
-          </section>
-        </>
-      )}
-
-      {activePanel === "categories" && <CategoryManager nested />}
-      {activePanel === "promotions" && <PromotionManager nested />}
+      <section className="card">
+        <h3>Каталог</h3>
+        {loading ? <p className="muted">Завантаження...</p> : viewMode === "table" ? productTable : productCards}
+      </section>
 
       <AdminModal
         open={drawerOpen}
@@ -394,7 +352,7 @@ const Products = () => {
           >
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.name}
+                {category.displayName}
               </option>
             ))}
           </select>
@@ -432,7 +390,7 @@ const Products = () => {
               <p className="muted small">Зображення ще не завантажено</p>
             )}
             <label className="pill-button pill-button--muted admin-upload__button">
-              <Upload size={16} />
+              <Upload size={16} color="white" />
               {uploadingImage ? "Завантаження..." : "Завантажити фото"}
               <input
                 type="file"

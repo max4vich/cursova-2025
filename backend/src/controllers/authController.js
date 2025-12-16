@@ -17,9 +17,39 @@ const profile = asyncHandler(async (req, res) => {
   return success(res, user);
 });
 
+const updateProfile = asyncHandler(async (req, res) => {
+  const user = await authService.updateProfile(req.user.id, req.body);
+  return success(res, user);
+});
+
+const listAddresses = asyncHandler(async (req, res) => {
+  const addresses = await authService.listAddresses(req.user.id);
+  return success(res, addresses);
+});
+
+const createAddress = asyncHandler(async (req, res) => {
+  const address = await authService.createAddress(req.user.id, req.body);
+  return created(res, address);
+});
+
+const updateAddress = asyncHandler(async (req, res) => {
+  const address = await authService.updateAddress(req.user.id, req.params.id, req.body);
+  return success(res, address);
+});
+
+const deleteAddress = asyncHandler(async (req, res) => {
+  await authService.deleteAddress(req.user.id, req.params.id);
+  return success(res, { deleted: true });
+});
+
 module.exports = {
   register,
   login,
   profile,
+  updateProfile,
+  listAddresses,
+  createAddress,
+  updateAddress,
+  deleteAddress,
 };
 

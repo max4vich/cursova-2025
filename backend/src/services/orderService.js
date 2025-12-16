@@ -40,43 +40,53 @@ const checkout = async (userId, payload) => {
     async (tx) => {
       await ensureProductAvailability(tx, result.orderDraft.items);
 
-      const created = await tx.order.create({
-        data: {
-          orderNumber: `ORD-${Date.now()}`,
-          userId,
-          promotionId: result.promotion?.id || null,
-          status: result.paymentResult.status === "PAID" ? "PAID" : "PENDING",
-          subtotal: result.orderDraft.subtotal,
-          discount: result.orderDraft.discount,
-          shipping: result.orderDraft.shipping,
-          tax: result.orderDraft.tax,
-          total: result.orderDraft.total,
-          items: {
-            create: result.orderDraft.items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-            })),
-          },
-          payment: {
-            create: {
-              provider: payload.paymentProvider || "mock",
-              status: result.paymentResult.status,
-              transactionId: result.paymentResult.transactionId,
-              paidAt: result.paymentResult.paidAt,
-              amount: result.orderDraft.total,
-            },
-          },
-          shipment: {
-            create: {
-              provider: result.shipment.provider,
-              trackingNumber: result.shipment.trackingNumber,
-              status: "PENDING",
-              cost: result.shipment.cost,
-              estimatedAt: result.shipment.estimatedAt,
-            },
+      const orderData = {
+        orderNumber: `ORD-${Date.now()}`,
+        userId: userId ? Number(userId) : null,
+        promotionId: result.promotion?.id ? Number(result.promotion.id) : null,
+        contactName: result.contactInfo.name,
+        contactEmail: result.contactInfo.email,
+        contactPhone: result.contactInfo.phone,
+        deliveryMethod: result.deliveryInfo.method,
+        deliveryCity: result.deliveryInfo.city || null,
+        deliveryAddress: result.deliveryInfo.address || null,
+        deliveryNotes: result.notes || null,
+        notes: result.notes || null,
+        status: result.paymentResult.status === "PAID" ? "PAID" : "PENDING",
+        subtotal: Number(result.orderDraft.subtotal),
+        discount: Number(result.orderDraft.discount || 0),
+        shipping: Number(result.orderDraft.shipping || 0),
+        tax: Number(result.orderDraft.tax || 0),
+        total: Number(result.orderDraft.total),
+        items: {
+          create: result.orderDraft.items.map((item) => ({
+            productId: Number(item.productId),
+            quantity: Number(item.quantity),
+            price: Number(item.price),
+          })),
+        },
+        payment: {
+          create: {
+            provider: payload.paymentProvider || "mock",
+            status: result.paymentResult.status || "PENDING",
+            transactionId: result.paymentResult.transactionId || null,
+            paidAt: result.paymentResult.paidAt || null,
+            amount: Number(result.orderDraft.total),
           },
         },
+        shipment: {
+          create: {
+            provider: result.shipment?.provider || "nova-poshta",
+            trackingNumber: result.shipment?.trackingNumber || null,
+            status: "PENDING",
+            cost: Number(result.shipment?.cost || 0),
+            estimatedAt: result.shipment?.estimatedAt || null,
+          },
+        },
+      };
+
+      const created = await tx.order.create({
+        data: orderData,
         include: { items: true, payment: true, shipment: true },
       });
 

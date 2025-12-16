@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { ProductCard } from "../components/ProductCard";
 import { ProductFilters } from "../components/ProductFilters";
 import { request } from "../api/client";
+import heroImage from "../assets/iphone-15-pro-max.webp";
 
 const defaultFilters = {
   categories: [],
@@ -16,7 +17,7 @@ const heroHighlights = [
   { label: "Повернення", value: "до 14 днів" },
 ];
 
-const Home = ({ globalSearch }) => {
+const Home = () => {
   const [filters, setFilters] = useState(defaultFilters);
   const [sort, setSort] = useState("default");
   const [catalog, setCatalog] = useState([]);
@@ -27,9 +28,6 @@ const Home = ({ globalSearch }) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ pageSize: 60 });
-      if (globalSearch) {
-        params.append("search", globalSearch);
-      }
       if (filters.inStock) {
         params.append("inStock", "true");
       }
@@ -40,7 +38,7 @@ const Home = ({ globalSearch }) => {
     } finally {
       setLoading(false);
     }
-  }, [filters.inStock, globalSearch]);
+  }, [filters.inStock]);
 
   useEffect(() => {
     fetchProducts();
@@ -54,11 +52,30 @@ const Home = ({ globalSearch }) => {
 
   const filteredProducts = useMemo(() => {
     const result = catalog.filter((product) => {
-      if (
-        filters.categories.length > 0 &&
-        !filters.categories.includes(product.category?.slug ?? product.category)
-      ) {
-        return false;
+      if (filters.categories.length > 0) {
+        const productCategorySlug = product.category?.slug;
+        if (!productCategorySlug) return false;
+
+        // Перевіряємо, чи вибрана сама категорія товару
+        const isDirectMatch = filters.categories.includes(productCategorySlug);
+        if (isDirectMatch) {
+          // Товар відповідає фільтру
+        } else {
+          // Перевіряємо, чи вибрана батьківська категорія
+          let isParentSelected = false;
+          for (const parent of categories) {
+            if (filters.categories.includes(parent.slug)) {
+              const childSlugs = (parent.children || []).map((child) => child.slug);
+              if (childSlugs.includes(productCategorySlug)) {
+                isParentSelected = true;
+                break;
+              }
+            }
+          }
+          if (!isParentSelected) {
+            return false;
+          }
+        }
       }
 
       const effectivePrice = Number(product.price);
@@ -84,7 +101,7 @@ const Home = ({ globalSearch }) => {
       return sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     }
     return sorted;
-  }, [catalog, filters, sort]);
+  }, [catalog, filters, sort, categories]);
 
   const handleReset = () => setFilters(defaultFilters);
 
@@ -123,9 +140,14 @@ const Home = ({ globalSearch }) => {
         </div>
 
         <div className="hero__visual">
-          <div className="hero__phone">
-            <div className="hero__screen" />
-            <div className="hero__notch" />
+          <div className="hero__image-glow" aria-hidden="true" />
+          <div className="hero__image-frame">
+            <img
+              src={heroImage}
+              alt="iPhone 15 Pro Max у кольорі Blue Titanium"
+              className="hero__image"
+              loading="lazy"
+            />
           </div>
         </div>
       </section>

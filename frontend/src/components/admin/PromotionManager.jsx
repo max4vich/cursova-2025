@@ -113,11 +113,11 @@ const PromotionManager = ({ nested = false }) => {
         </div>
         <div className="manager-card__actions">
           <button type="button" className="pill-button" onClick={() => openModal()}>
-            <Plus size={16} />
+            <Plus size={16} color="white" />
             Додати промокод
           </button>
           <button type="button" className="pill-button pill-button--ghost" onClick={loadPromotions}>
-            <RefreshCw size={16} />
+            <RefreshCw size={16} color="white" />
             Оновити
           </button>
         </div>
@@ -160,7 +160,7 @@ const PromotionManager = ({ nested = false }) => {
                   onClick={() => openModal(row)}
                   title="Редагувати"
                 >
-                  <Edit size={16} />
+                  <Edit size={16} color="white" />
                 </button>
                 <button
                   className="link-button link-button--icon"
@@ -168,7 +168,7 @@ const PromotionManager = ({ nested = false }) => {
                   onClick={() => handleDelete(row)}
                   title="Видалити"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} color="white" />
                 </button>
               </>
             )}

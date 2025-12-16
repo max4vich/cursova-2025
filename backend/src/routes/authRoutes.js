@@ -23,9 +23,39 @@ const loginValidation = [
   body("password").notEmpty().withMessage("Password is required"),
 ];
 
+const updateProfileValidation = [
+  body("name").optional().trim().isLength({ min: 2 }).withMessage("Name is too short"),
+  body("phone")
+    .optional()
+    .isLength({ min: 6 })
+    .withMessage("Phone must contain at least 6 digits"),
+];
+
+const addressValidation = [
+  body("label").optional().trim().isLength({ max: 120 }).withMessage("Label is too long"),
+  body("city").trim().notEmpty().withMessage("City is required"),
+  body("street").trim().notEmpty().withMessage("Street is required"),
+  body("postalCode").trim().notEmpty().withMessage("Postal code is required"),
+  body("metadata")
+    .optional()
+    .isObject()
+    .withMessage("Metadata must be an object"),
+];
+
 router.post("/register", validate(registerValidation), authController.register);
 router.post("/login", validate(loginValidation), authController.login);
 router.get("/me", authenticate, authController.profile);
+router.put("/me", authenticate, validate(updateProfileValidation), authController.updateProfile);
+
+router.get("/addresses", authenticate, authController.listAddresses);
+router.post("/addresses", authenticate, validate(addressValidation), authController.createAddress);
+router.put(
+  "/addresses/:id",
+  authenticate,
+  validate(addressValidation),
+  authController.updateAddress
+);
+router.delete("/addresses/:id", authenticate, authController.deleteAddress);
 
 module.exports = router;
 

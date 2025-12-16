@@ -15,19 +15,19 @@ import Orders from "./pages/admin/Orders";
 import Users from "./pages/admin/Users";
 import Categories from "./pages/admin/Categories";
 import Promotions from "./pages/admin/Promotions";
+import Reports from "./pages/admin/Reports";
 import { Header } from "./components/Header";
 
 const App = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
-  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <div className={`app ${isAdminRoute ? "app--admin" : ""}`}>
-      {!isAdminRoute && <Header onSearchChange={setSearchQuery} />}
+      {!isAdminRoute && <Header />}
       <main className="main">
         <Routes>
-          <Route path="/" element={<Home globalSearch={searchQuery} />} />
+          <Route path="/" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
@@ -42,6 +42,7 @@ const App = () => {
             <Route path="promotions" element={<Promotions />} />
             <Route path="orders" element={<Orders />} />
             <Route path="users" element={<Users />} />
+            <Route path="reports" element={<Reports />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

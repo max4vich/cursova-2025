@@ -13,7 +13,7 @@ const AdminModal = ({ open, title, onClose, children, footer }) => {
             <h2>{title}</h2>
           </div>
           <button type="button" className="icon-button icon-button--ghost" onClick={onClose}>
-            <X size={18} />
+            <X size={18} color="white" />
           </button>
         </header>
         <div className="admin-modal__body">{children}</div>

@@ -150,6 +150,13 @@ model Order {
   orderNumber  String      @unique
   userId       Int?
   promotionId  Int?
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  deliveryMethod String?
+  deliveryCity String?
+  deliveryAddress String?
+  deliveryNotes String?
   status       OrderStatus @default(PENDING)
   subtotal     Decimal     @db.Decimal(10, 2)
   discount     Decimal     @db.Decimal(10, 2) @default(0)

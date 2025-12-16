@@ -66,6 +66,75 @@ const getProfile = async (userId) => {
   return sanitizeUser(user);
 };
 
+const updateProfile = async (userId, payload) => {
+  const data = {};
+  if (payload.name !== undefined) {
+    data.name = payload.name;
+  }
+  if (payload.phone !== undefined) {
+    data.phone = payload.phone;
+  }
+  if (Object.keys(data).length === 0) {
+    return getProfile(userId);
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data,
+  });
+  return getProfile(userId);
+};
+
+const listAddresses = (userId) =>
+  prisma.address.findMany({
+    where: { userId },
+    orderBy: { id: "desc" },
+  });
+
+const ensureAddressOwner = async (addressId, userId) => {
+  const address = await prisma.address.findUnique({
+    where: { id: Number(addressId) },
+  });
+  if (!address || address.userId !== userId) {
+    const error = new Error("Address not found");
+    error.status = 404;
+    throw error;
+  }
+  return address;
+};
+
+const createAddress = (userId, payload) =>
+  prisma.address.create({
+    data: {
+      userId,
+      label: payload.label,
+      city: payload.city,
+      street: payload.street,
+      postalCode: payload.postalCode,
+      metadata: payload.metadata || null,
+    },
+  });
+
+const updateAddress = async (userId, addressId, payload) => {
+  await ensureAddressOwner(addressId, userId);
+  return prisma.address.update({
+    where: { id: Number(addressId) },
+    data: {
+      label: payload.label,
+      city: payload.city,
+      street: payload.street,
+      postalCode: payload.postalCode,
+      metadata: payload.metadata || null,
+    },
+  });
+};
+
+const deleteAddress = async (userId, addressId) => {
+  await ensureAddressOwner(addressId, userId);
+  await prisma.address.delete({
+    where: { id: Number(addressId) },
+  });
+};
+
 const ensureAdminUser = async () => {
   if (!config.admin.email || !config.admin.password) return;
   const admin = await prisma.user.findUnique({
@@ -89,6 +158,11 @@ module.exports = {
   register,
   login,
   getProfile,
+  updateProfile,
+  listAddresses,
+  createAddress,
+  updateAddress,
+  deleteAddress,
   ensureAdminUser,
 };
 

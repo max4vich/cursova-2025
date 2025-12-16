@@ -14,6 +14,7 @@ export const adminApi = {
   getDashboardMetrics: () => request("/reports/revenue"),
 
   getSalesByCategory: () => request("/reports/sales-by-category"),
+  getRevenueByPeriod: (from, to) => request(`/reports/revenue${buildQuery({ from, to })}`),
   getTopProducts: (limit = 5) => request(`/reports/top-products?limit=${limit}`),
 
   getProducts: (params) => request(`/admin/products${buildQuery(params)}`),
