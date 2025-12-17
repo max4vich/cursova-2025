@@ -1,12 +1,11 @@
-const serverless = require("serverless-http");
 const app = require("../src/app");
 
-// ❗ НЕ імпортуємо Prisma
-// ❗ НЕ викликаємо connectPrisma
-// ❗ НЕ робимо cold-start логіки
+// ❗ Vercel автоматично обгортає Express‑додаток у serverless‑функцію.
+// ❗ Prisma ініціалізується як singleton у `src/libs/prisma.js`, тому
+//    тут додаткових підключень не робимо.
+// ❗ Жодної custom cold‑start логіки у handler не потрібно.
 
-const handler = serverless(app);
+// Експортуємо сам `app` — Vercel Node Runtime створить handler сам.
+module.exports = app;
 
-module.exports = async (req, res) => {
-  return await handler(req, res);
-};
+
