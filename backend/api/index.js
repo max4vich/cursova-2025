@@ -1,16 +1,12 @@
 const serverless = require("serverless-http");
 const app = require("../src/app");
-const { connectPrisma } = require("../src/libs/prisma");
 
-let handler;
+// ❗ НЕ імпортуємо Prisma
+// ❗ НЕ викликаємо connectPrisma
+// ❗ НЕ робимо cold-start логіки
+
+const handler = serverless(app);
 
 module.exports = async (req, res) => {
-  if (!handler) {
-    await connectPrisma();
-    handler = serverless(app);
-  }
-
   return await handler(req, res);
 };
-
-
