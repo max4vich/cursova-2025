@@ -4,15 +4,16 @@
   "description": "REST backend for the e-commerce platform",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy",
-    "prisma:seed": "node prisma/seed.js",
-    "lint": "echo \"No linter configured\"",
-    "test": "echo \"No tests yet\""
-  },
+  "dev": "nodemon src/server.js",
+  "start": "node src/server.js",
+  "prisma:generate": "prisma generate",
+  "prisma:migrate": "prisma migrate dev",
+  "prisma:deploy": "prisma migrate deploy",
+  "prisma:seed": "node prisma/seed.js",
+  "postinstall": "prisma generate",
+  "lint": "echo \"No linter configured\"",
+  "test": "echo \"No tests yet\""
+},
   "keywords": [
     "express",
     "prisma",
