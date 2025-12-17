@@ -2,14 +2,15 @@ const path = require("path");
 const express = require("express");
 const app = require("./app");
 const config = require("./config/env");
-const { connectPrisma, disconnectPrisma } = require("./libs/prisma");
 const { ensureAdminUser } = require("./services/authService");
 
 let server;
 
 const start = async () => {
   try {
-    await connectPrisma();
+    // ⚠️ Prisma НЕ конектимо вручну
+    // Prisma підключиться автоматично при першому запиті
+
     await ensureAdminUser();
 
     server = app.listen(config.port, () => {
@@ -17,7 +18,6 @@ const start = async () => {
     });
   } catch (error) {
     console.error("Failed to start server", error);
-    await disconnectPrisma().catch(() => {});
     process.exit(1);
   }
 };
@@ -29,18 +29,14 @@ const shutdown = async (signal) => {
     await new Promise((resolve) => server.close(resolve));
   }
 
-  await disconnectPrisma().catch((err) => {
-    console.error("Error disconnecting Prisma during shutdown", err);
-  });
-
   process.exit(0);
 };
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-start();
-
+// static uploads (локально / VPS)
 const uploadsPath = path.join(__dirname, "../uploads");
 app.use("/uploads", express.static(uploadsPath));
 
+start();

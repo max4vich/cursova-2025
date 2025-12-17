@@ -1,44 +1,22 @@
-require("../config/env");
-const { PrismaClient, Prisma } = require("@prisma/client");
+const { PrismaClient } = require("@prisma/client");
 
-if (Prisma?.Decimal) {
-  Prisma.Decimal.prototype.toJSON = function toJSON() {
-    return this.toNumber();
-  };
-}
-
-const createClient = () => new PrismaClient();
+/**
+ * Prisma singleton for serverless environments (Vercel friendly)
+ *
+ * - No explicit $connect()
+ * - Prevents multiple connections in hot reload / serverless
+ * - Uses globalThis to persist instance
+ */
 
 let prisma;
 
 if (process.env.NODE_ENV === "production") {
-  prisma = createClient();
+  prisma = new PrismaClient();
 } else {
-  if (!global.__prisma) {
-    global.__prisma = createClient();
+  if (!globalThis.prisma) {
+    globalThis.prisma = new PrismaClient();
   }
-  prisma = global.__prisma;
+  prisma = globalThis.prisma;
 }
 
-let isConnected = false;
-
-async function connectPrisma() {
-  if (!isConnected) {
-    await prisma.$connect();
-    isConnected = true;
-  }
-  return prisma;
-}
-
-async function disconnectPrisma() {
-  if (isConnected) {
-    await prisma.$disconnect();
-    isConnected = false;
-  }
-}
-
-module.exports = {
-  prisma,
-  connectPrisma,
-  disconnectPrisma,
-};
+module.exports = { prisma };
