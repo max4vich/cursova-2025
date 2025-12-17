@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     handler = serverless(app);
   }
 
-  return handler(req, res);
+  return await handler(req, res);
 };
 
 
