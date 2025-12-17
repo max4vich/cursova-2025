@@ -24,7 +24,7 @@
  * Використовується у всіх API модулях (admin.js) та компонентах, що роблять HTTP-запити.
  * Наприклад: request("/cart"), request("/products", { method: "POST", body: {...} })
  */
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "https://your-app.vercel.app/api";
 const TOKEN_KEY = "techshop:token";
 
 const getToken = () => localStorage.getItem(TOKEN_KEY);
