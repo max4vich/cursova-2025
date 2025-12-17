@@ -11,7 +11,6 @@ const Register = () => {
     email: "",
     password: "",
     phone: "",
-    address: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -73,13 +72,6 @@ const Register = () => {
           onChange={handleChange}
           required
           minLength={6}
-        />
-        <input
-          name="address"
-          placeholder="Адреса"
-          value={form.address}
-          onChange={handleChange}
-          required
         />
         <button className="pill-button pill-button--block" disabled={isSubmitting}>
           {isSubmitting ? "Створення..." : "Зареєструватись"}

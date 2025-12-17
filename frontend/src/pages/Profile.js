@@ -299,8 +299,6 @@ const Profile = () => {
         <h3>Замовлення</h3>
         {ordersLoading ? (
           <p className="muted">Завантаження…</p>
-        ) : ordersError ? (
-          <p className="muted">{ordersError}</p>
         ) : formattedOrders.length === 0 ? (
           <p className="muted">Замовлень ще немає</p>
         ) : (
