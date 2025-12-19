@@ -85,7 +85,7 @@ mysql://avnadmin:ВАШ_ПАРОЛЬ@el3ctric-max777george-4f8c.l.aivencloud.com
 
 Після deployment:
 
-1. ✅ Відкрийте: `https://cursova-2025-backend.vercel.app/health/db`
+1. ✅ Відкрийте: `https://cursova-2025-backend.vercel.app/health-db`
 2. ✅ Перевірте відповідь:
 
 **Якщо працює:**
@@ -141,7 +141,7 @@ mysql://avnadmin:ВАШ_ПАРОЛЬ@el3ctric-max777george-4f8c.l.aivencloud.com
 
 Після виконання всіх кроків, відкрийте:
 ```
-https://cursova-2025-backend.vercel.app/health/db
+https://cursova-2025-backend.vercel.app/health-db
 ```
 
 Якщо бачите `"database": "connected"` - все працює! ✅

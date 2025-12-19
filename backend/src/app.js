@@ -32,7 +32,8 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.get("/health/db", async (_req, res) => {
+// Database health check endpoint (using - instead of / to avoid routing issues on Vercel)
+app.get("/health-db", async (_req, res) => {
   try {
     const { prisma } = require("./libs/prisma");
     // Try a simple query to test database connection

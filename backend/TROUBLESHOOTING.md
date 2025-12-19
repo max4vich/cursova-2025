@@ -60,7 +60,7 @@ mysql://avnadmin:ВАШ_ПАРОЛЬ@el3ctric-max777george-4f8c.l.aivencloud.com
 
 Після deployment на Vercel:
 
-1. Відкрийте `https://ваш-домен.vercel.app/health/db`
+1. Відкрийте `https://ваш-домен.vercel.app/health-db`
 2. Перевірте відповідь:
    - Якщо `"database": "connected"` - все працює! ✅
    - Якщо `"database": "disconnected"` - дивіться деталі помилки
@@ -105,7 +105,7 @@ mysql -h el3ctric-max777george-4f8c.l.aivencloud.com -P 16733 -u avnadmin -p
 1. В Aiven: Додайте `0.0.0.0/0` до IP whitelist
 2. В Vercel: Оновіть `DATABASE_URL` з правильними SSL параметрами
 3. Зробіть новий deployment на Vercel
-4. Перевірте `/health/db` endpoint
+4. Перевірте `/health-db` endpoint
 
 ---
 
